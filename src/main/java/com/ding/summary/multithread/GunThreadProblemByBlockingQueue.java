@@ -25,19 +25,17 @@ public class GunThreadProblemByBlockingQueue {
         @Override
         public void run() {
             while (true) {
-                if (queue.size() > 0) {
+                try {
+                    queue.take();
+                    System.out.println("射击----Thread:" + Thread.currentThread().getName() + ",size:" + queue.size());
+                } catch (InterruptedException e) {
                     try {
-                        queue.take();
-                        System.out.println("射击----Thread:" + Thread.currentThread().getName() + ",size:" + queue.size());
-                    } catch (InterruptedException e) {
-                        try {
-                            System.out.println("===================================================");
-                            Thread.sleep(5000);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        }
-                        e.printStackTrace();
+                        System.out.println("===================================================");
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
                     }
+                    e.printStackTrace();
                 }
             }
         }
@@ -54,13 +52,11 @@ public class GunThreadProblemByBlockingQueue {
         @Override
         public void run() {
             while (true) {
-                if (queue.size() < 20) {
-                    try {
-                        queue.put(1);
-                        System.out.println("上膛+++Thread:" + Thread.currentThread().getName() + ",size:" + queue.size());
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    queue.put(1);
+                    System.out.println("上膛+++Thread:" + Thread.currentThread().getName() + ",size:" + queue.size());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }
