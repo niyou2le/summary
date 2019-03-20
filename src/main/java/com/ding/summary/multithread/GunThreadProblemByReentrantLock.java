@@ -1,7 +1,11 @@
 package com.ding.summary.multithread;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -12,8 +16,11 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class GunThreadProblemByReentrantLock {
 
-    private static LinkedList<Integer> queue = new LinkedList<>();
+    private static List<Integer> queue = new ArrayList<>();
     private static Lock lock = new ReentrantLock();
+
+    private static Condition notFull = lock.newCondition();
+    private static Condition notEmpty = lock.newCondition();
 
     static class Shot implements Runnable {
 
@@ -23,9 +30,14 @@ public class GunThreadProblemByReentrantLock {
                 try {
                     lock.tryLock(10, TimeUnit.SECONDS);
                     if (queue.size() > 0) {
-                        queue.remove();
+                        queue.remove(0);
                         System.out.println(Thread.currentThread().getName() + "-射击：" + queue.size());
+                        notFull.signalAll();
+                    }else {
+                        System.out.println("队列空了，射击停止");
+                        notEmpty.await();
                     }
+
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {
@@ -43,9 +55,14 @@ public class GunThreadProblemByReentrantLock {
                 try {
                     lock.tryLock(10, TimeUnit.SECONDS);
                     if (queue.size() < 20) {
-                        queue.push(1);
+                        queue.add(1);
                         System.out.println(Thread.currentThread().getName() + "-装弹：" + queue.size());
+                        notEmpty.signalAll();
+                    }else {
+                        System.out.println("队列满了，装弹停止");
+                        notFull.await();
                     }
+
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {
@@ -57,8 +74,11 @@ public class GunThreadProblemByReentrantLock {
 
     public static void main(String[] args) {
         Thread t1 = new Thread(new Load());
-        t1.setName("load");
+        t1.setName("loadA");
         t1.start();
+        Thread t11 = new Thread(new Load());
+        t11.setName("loadB");
+        t11.start();
 
         Thread t2 = new Thread(new Shot());
         t2.setName("shotA");
